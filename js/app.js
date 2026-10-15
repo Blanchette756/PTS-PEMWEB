@@ -244,6 +244,16 @@ function setupEventListeners() {
     btnRetry.addEventListener('click', fetchProductsData);
     orderForm.addEventListener('submit', handleFormValidation);
 
+    orderForm.addEventListener('reset', () => {
+        errorBuyerName.textContent = '';
+        errorBuyerEmail.textContent = '';
+        errorConfirmEmail.textContent = '';
+        formSuccess.hidden = true;
+        buyerName.classList.remove('invalid', 'valid');
+        buyerEmail.classList.remove('invalid', 'valid');
+        confirmEmail.classList.remove('invalid', 'valid');
+    });
+
     buyerEmail.addEventListener('input', () => {
         if (confirmEmail.value) {
             if (buyerEmail.value !== confirmEmail.value) {
