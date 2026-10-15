@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UMKM Nusantara - Platform Agregator &amp; Direktori Produk</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <header class="site-header">
+        <h1>Katalog Produk UMKM Nusantara</h1>
+        <p class="tagline">Platform Agregator Produk &amp; Direktori UMKM Digital</p>
+        <p class="timestamp-info">
+            Pembaruan Terakhir: <time id="last-update-time">Belum dimuat</time>
+        </p>
+    </header>
+
+    <nav class="site-nav" aria-label="Navigasi dan Kontrol Data">
+        <h2>Kontrol &amp; Navigasi</h2>
+
+        <section class="nav-section">
+            <h3>Pencarian Produk</h3>
+            <form id="form-pencarian" role="search" onsubmit="event.preventDefault();">
+                <label for="search-input">Cari Nama Produk</label>
+                <input type="search" id="search-input" placeholder="Ketik nama produk..." autocomplete="off">
+            </form>
+        </section>
+
+        <section class="nav-section">
+            <h3>Pengurutan Produk</h3>
+            <label for="sort-select">Urutkan Berdasarkan</label>
+            <select id="sort-select">
+                <option value="default">Bawaan API</option>
+                <option value="price-asc">Harga: Terendah &rarr; Tertinggi</option>
+                <option value="price-desc">Harga: Tertinggi &rarr; Terendah</option>
+                <option value="name-asc">Nama: A &rarr; Z</option>
+                <option value="name-desc">Nama: Z &rarr; A</option>
+                <option value="rating-desc">Rating Tertinggi</option>
+            </select>
+        </section>
+
+        <section class="nav-section stats-section">
+            <h3>Ringkasan Statistik Pasar</h3>
+            <p>Total Produk: <strong id="stat-total">0</strong></p>
+            <p>Rata-rata Harga: $<strong id="stat-avg-price">0.00</strong></p>
+            <p>Produk Termahal: <strong id="stat-max-price">-</strong></p>
+            <p>Jumlah Kategori: <strong id="stat-category-count">0</strong></p>
+        </section>
+
+        <section class="nav-section">
+            <h3>Menu Cepat</h3>
+            <ul>
+                <li><a href="#katalog-produk">Katalog Produk</a></li>
+                <li><a href="#form-pemesanan">Pemesanan &amp; Konsultasi</a></li>
+            </ul>
+        </section>
+    </nav>
+
+    <main class="site-main">
+
+        <article id="katalog-produk" class="main-article">
+            <header>
+                <h2>Katalog Produk Unggulan</h2>
+                <p>Koleksi produk terkurasi dari mitra UMKM terpercaya</p>
+            </header>
+
+            <section id="status-container" aria-live="polite">
+                <h3>Status Data</h3>
+                
+                <p id="loading-indicator">Sedang memuat data produk...</p>
+
+                <section id="error-box" hidden>
+                    <h4>Gagal Memuat Data Produk</h4>
+                    <p id="error-message">Terjadi gangguan koneksi ke server data.</p>
+                    <button type="button" id="btn-retry">Coba Lagi (Retry)</button>
+                </section>
+
+                <p id="empty-state" hidden>Tidak ada produk yang cocok dengan pencarian Anda.</p>
+            </section>
+
+            <section id="product-container" class="product-grid" aria-label="Daftar Produk"></section>
+        </article>
+
+        <article id="form-pemesanan" class="main-article">
+            <header>
+                <h2>Pemesanan &amp; Konsultasi Produk</h2>
+                <p>Tertarik dengan produk UMKM? Silakan isi formulir di bawah ini untuk pemesanan atau konsultasi</p>
+            </header>
+
+            <section class="form-wrapper">
+                <h3>Formulir Pengajuan</h3>
+
+                <form id="order-form" novalidate>
+                    <label for="buyer-name">Nama Lengkap</label>
+                    <input type="text" id="buyer-name" name="buyerName" required placeholder="Masukkan nama Anda">
+                    <span id="error-buyer-name" class="field-error" aria-live="polite"></span>
+
+                    <label for="buyer-email">Alamat Email</label>
+                    <input type="email" id="buyer-email" name="buyerEmail" required placeholder="nama@email.com">
+                    <span id="error-buyer-email" class="field-error" aria-live="polite"></span>
+
+                    <label for="confirm-email">Konfirmasi Alamat Email</label>
+                    <input type="email" id="confirm-email" name="confirmEmail" required placeholder="Ulangi alamat email yang sama">
+                    <span id="error-confirm-email" class="field-error" aria-live="polite"></span>
+
+                    <label for="product-interest">Produk yang Diminati</label>
+                    <input type="text" id="product-interest" name="productInterest" placeholder="Contoh: Eyeshadow, Essence, dll.">
+
+                    <label for="order-notes">Catatan atau Keterangan Pesanan</label>
+                    <textarea id="order-notes" name="orderNotes" rows="3" placeholder="Tuliskan jumlah barang atau detail pesanan..."></textarea>
+
+                    <button type="submit" id="btn-submit">Kirim Pengajuan</button>
+                    <button type="reset" id="btn-reset">Reset</button>
+
+                    <p id="form-success" class="form-success-banner" role="status" hidden>
+                        Pengajuan Anda berhasil dikirim! Tim kami akan menghubungi email Anda.
+                    </p>
+                </form>
+            </section>
+        </article>
+
+    </main>
+
+    <footer class="site-footer">
+        <h2>UMKM Nusantara</h2>
+        <p>Platform digital terpadu katalog dan promosi produk Usaha Mikro, Kecil, dan Menengah.</p>
+        <p>&copy; 2026 UMKM Nusantara. Seluruh Hak Cipta Dilindungi.</p>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
