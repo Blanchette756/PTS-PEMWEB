@@ -148,8 +148,8 @@ function processAndDisplayProducts() {
 
     let filtered = allProducts.filter(item => {
         const matchSearch = item.title.toLowerCase().includes(keyword) ||
-                            item.description.toLowerCase().includes(keyword) ||
-                            item.category.toLowerCase().includes(keyword);
+            item.description.toLowerCase().includes(keyword) ||
+            item.category.toLowerCase().includes(keyword);
         const matchCategory = selectedCategory === 'all' || item.category.toLowerCase() === selectedCategory.toLowerCase();
         return matchSearch && matchCategory;
     });
