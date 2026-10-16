@@ -1,15 +1,23 @@
 const API_URL = 'https://dummyjson.com/products?limit=30';
 
 let allProducts = [];
+let selectedCategory = 'all';
+let statItems = [];
+let currentStatIndex = 0;
+let statSlideTimer = null;
 
-const timeElement = document.getElementById('last-update-time');
+const timeEl = document.getElementById('last-update-time');
 const searchInput = document.getElementById('search-input');
 const sortSelect = document.getElementById('sort-select');
 
-const statTotal = document.getElementById('stat-total');
-const statAvgPrice = document.getElementById('stat-avg-price');
-const statMaxPrice = document.getElementById('stat-max-price');
-const statCategoryCount = document.getElementById('stat-category-count');
+const statsSection = document.querySelector('.stats-section');
+const btnStatPrev = document.getElementById('btn-stat-prev');
+const btnStatNext = document.getElementById('btn-stat-next');
+const statLabel = document.getElementById('stat-slide-label');
+const statValue = document.getElementById('stat-slide-value');
+const statDesc = document.getElementById('stat-slide-desc');
+const statDots = document.getElementById('stat-dots');
+const categoryPills = document.getElementById('category-pills');
 
 const loadingIndicator = document.getElementById('loading-indicator');
 const errorBox = document.getElementById('error-box');
@@ -22,98 +30,114 @@ const orderForm = document.getElementById('order-form');
 const buyerName = document.getElementById('buyer-name');
 const buyerEmail = document.getElementById('buyer-email');
 const confirmEmail = document.getElementById('confirm-email');
-const errorBuyerName = document.getElementById('error-buyer-name');
-const errorBuyerEmail = document.getElementById('error-buyer-email');
-const errorConfirmEmail = document.getElementById('error-confirm-email');
+const errName = document.getElementById('error-buyer-name');
+const errEmail = document.getElementById('error-buyer-email');
+const errConfirm = document.getElementById('error-confirm-email');
 const formSuccess = document.getElementById('form-success');
 
 function formatTimestamp(date) {
-    return new Intl.DateTimeFormat('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'medium'
-    }).format(date);
+    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'medium' }).format(date);
+}
+
+function displayStatSlide(index) {
+    if (!statItems.length) return;
+    currentStatIndex = (index + statItems.length) % statItems.length;
+    const item = statItems[currentStatIndex];
+    statLabel.textContent = item.label;
+    statValue.textContent = item.value;
+    statDesc.textContent = item.desc;
+    statDots.querySelectorAll('.stat-dot').forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === currentStatIndex);
+    });
+}
+
+function renderStatDots() {
+    statDots.innerHTML = '';
+    statItems.forEach((_, idx) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = `stat-dot ${idx === currentStatIndex ? 'active' : ''}`;
+        dot.setAttribute('aria-label', `Slide ${idx + 1}`);
+        dot.addEventListener('click', () => { displayStatSlide(idx); startStatTimer(); });
+        statDots.appendChild(dot);
+    });
+}
+
+function startStatTimer() {
+    stopStatTimer();
+    statSlideTimer = setInterval(() => displayStatSlide(currentStatIndex + 1), 3500);
+}
+
+function stopStatTimer() {
+    if (statSlideTimer) clearInterval(statSlideTimer);
 }
 
 function updateAnalytics(products) {
     if (!products.length) {
-        statTotal.textContent = '0';
-        statAvgPrice.textContent = '0.00';
-        statMaxPrice.textContent = '-';
-        statCategoryCount.textContent = '0';
+        statItems = [{ label: 'Total Produk', value: '0 Item', desc: 'Tidak ada data produk' }];
+        displayStatSlide(0);
+        renderStatDots();
         return;
     }
 
-    statTotal.textContent = products.length.toString();
-
     const totalSum = products.reduce((acc, curr) => acc + curr.price, 0);
-    const avgPrice = totalSum / products.length;
-    statAvgPrice.textContent = avgPrice.toFixed(2);
+    const avgPrice = (totalSum / products.length).toFixed(2);
+    const maxProduct = products.reduce((prev, curr) => curr.price > prev.price ? curr : prev, products[0]);
+    const minProduct = products.reduce((prev, curr) => curr.price < prev.price ? curr : prev, products[0]);
+    const topRated = products.reduce((prev, curr) => curr.rating > prev.rating ? curr : prev, products[0]);
+    const categories = new Set(products.map(item => item.category));
 
-    const maxProduct = products.reduce((prev, curr) => (curr.price > prev.price ? curr : prev), products[0]);
-    statMaxPrice.textContent = `${maxProduct.title} ($${maxProduct.price})`;
+    statItems = [
+        { label: 'Total Produk', value: `${products.length} Item`, desc: 'Produk aktif dalam katalog' },
+        { label: 'Rata-rata Harga', value: `$${avgPrice}`, desc: 'Dihitung dari seluruh produk terpilih' },
+        { label: 'Produk Termahal', value: `$${maxProduct.price} (${maxProduct.title})`, desc: 'Harga tertinggi di katalog' },
+        { label: 'Produk Termurah', value: `$${minProduct.price} (${minProduct.title})`, desc: 'Harga paling terjangkau' },
+        { label: 'Variasi Kategori', value: `${categories.size} Kategori`, desc: 'Ragam kelompok usaha UMKM' },
+        { label: 'Rating Tertinggi', value: `★ ${topRated.rating.toFixed(1)} (${topRated.title})`, desc: 'Ulasan pembeli terbaik' }
+    ];
 
-    const categories = products.map(item => item.category);
-    const uniqueCategories = new Set(categories);
-    statCategoryCount.textContent = uniqueCategories.size.toString();
+    displayStatSlide(currentStatIndex);
+    renderStatDots();
+    startStatTimer();
+}
+
+function renderCategoryPills(categories) {
+    categoryPills.innerHTML = '';
+    const all = ['all', ...categories];
+    all.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pill-btn ${selectedCategory === cat ? 'active' : ''}`;
+        btn.textContent = cat === 'all' ? 'Semua' : cat.charAt(0).toUpperCase() + cat.slice(1);
+        btn.addEventListener('click', () => {
+            selectedCategory = cat;
+            categoryPills.querySelectorAll('.pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+            processAndDisplayProducts();
+        });
+        categoryPills.appendChild(btn);
+    });
 }
 
 function renderProducts(products) {
     productContainer.innerHTML = '';
-
-    if (!products.length) {
-        emptyState.hidden = false;
-        return;
-    }
-
-    emptyState.hidden = true;
+    emptyState.hidden = products.length > 0;
+    if (!products.length) return;
 
     products.forEach(item => {
         const card = document.createElement('article');
         card.className = 'product-card';
-
-        const thumb = document.createElement('img');
-        thumb.src = item.thumbnail;
-        thumb.alt = item.title;
-        thumb.className = 'product-thumb';
-        thumb.loading = 'lazy';
-
-        const body = document.createElement('div');
-        body.className = 'product-body';
-
-        const category = document.createElement('span');
-        category.className = 'product-category';
-        category.textContent = item.category;
-
-        const title = document.createElement('h3');
-        title.className = 'product-title';
-        title.textContent = item.title;
-
-        const desc = document.createElement('p');
-        desc.className = 'product-desc';
-        desc.textContent = item.description;
-
-        const footer = document.createElement('div');
-        footer.className = 'product-footer';
-
-        const price = document.createElement('span');
-        price.className = 'product-price';
-        price.textContent = `$${item.price.toFixed(2)}`;
-
-        const rating = document.createElement('span');
-        rating.className = 'product-rating';
-        rating.textContent = `★ ${item.rating.toFixed(1)}`;
-
-        footer.appendChild(price);
-        footer.appendChild(rating);
-
-        body.appendChild(category);
-        body.appendChild(title);
-        body.appendChild(desc);
-        body.appendChild(footer);
-
-        card.appendChild(thumb);
-        card.appendChild(body);
-
+        card.innerHTML = `
+            <img src="${item.thumbnail}" alt="${item.title}" class="product-thumb" loading="lazy">
+            <div class="product-body">
+                <span class="product-category">${item.category}</span>
+                <h3 class="product-title">${item.title}</h3>
+                <p class="product-desc">${item.description}</p>
+                <div class="product-footer">
+                    <span class="product-price">$${item.price.toFixed(2)}</span>
+                    <span class="product-rating">★ ${item.rating.toFixed(1)}</span>
+                </div>
+            </div>
+        `;
         productContainer.appendChild(card);
     });
 }
@@ -123,23 +147,18 @@ function processAndDisplayProducts() {
     const sortMode = sortSelect.value;
 
     let filtered = allProducts.filter(item => {
-        const matchTitle = item.title.toLowerCase().includes(keyword);
-        const matchDesc = item.description.toLowerCase().includes(keyword);
-        const matchCat = item.category.toLowerCase().includes(keyword);
-        return matchTitle || matchDesc || matchCat;
+        const matchSearch = item.title.toLowerCase().includes(keyword) ||
+                            item.description.toLowerCase().includes(keyword) ||
+                            item.category.toLowerCase().includes(keyword);
+        const matchCategory = selectedCategory === 'all' || item.category.toLowerCase() === selectedCategory.toLowerCase();
+        return matchSearch && matchCategory;
     });
 
-    if (sortMode === 'price-asc') {
-        filtered.sort((a, b) => a.price - b.price);
-    } else if (sortMode === 'price-desc') {
-        filtered.sort((a, b) => b.price - a.price);
-    } else if (sortMode === 'name-asc') {
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
-    } else if (sortMode === 'name-desc') {
-        filtered.sort((a, b) => b.title.localeCompare(a.title));
-    } else if (sortMode === 'rating-desc') {
-        filtered.sort((a, b) => b.rating - a.rating);
-    }
+    if (sortMode === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+    else if (sortMode === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+    else if (sortMode === 'name-asc') filtered.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sortMode === 'name-desc') filtered.sort((a, b) => b.title.localeCompare(a.title));
+    else if (sortMode === 'rating-desc') filtered.sort((a, b) => b.rating - a.rating);
 
     renderProducts(filtered);
     updateAnalytics(filtered);
@@ -153,17 +172,14 @@ async function fetchProductsData() {
 
     try {
         const response = await fetch(API_URL);
-
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const data = await response.json();
         allProducts = Array.isArray(data.products) ? data.products : [];
-
         loadingIndicator.hidden = true;
-        timeElement.textContent = formatTimestamp(new Date());
+        timeEl.textContent = formatTimestamp(new Date());
 
+        const uniqueCategories = Array.from(new Set(allProducts.map(p => p.category)));
+        renderCategoryPills(uniqueCategories);
         processAndDisplayProducts();
     } catch (err) {
         loadingIndicator.hidden = true;
@@ -172,70 +188,70 @@ async function fetchProductsData() {
     }
 }
 
-function validateEmailFormat(email) {
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return pattern.test(email);
+function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function handleFormValidation(e) {
     e.preventDefault();
-
     let isValid = true;
 
-    errorBuyerName.textContent = '';
-    errorBuyerEmail.textContent = '';
-    errorConfirmEmail.textContent = '';
+    errName.textContent = '';
+    errEmail.textContent = '';
+    errConfirm.textContent = '';
     formSuccess.hidden = true;
 
-    buyerName.classList.remove('invalid', 'valid');
-    buyerEmail.classList.remove('invalid', 'valid');
-    confirmEmail.classList.remove('invalid', 'valid');
+    const name = buyerName.value.trim();
+    const email = buyerEmail.value.trim();
+    const confirm = confirmEmail.value.trim();
 
-    const nameValue = buyerName.value.trim();
-    const emailValue = buyerEmail.value.trim();
-    const confirmValue = confirmEmail.value.trim();
-
-    if (!nameValue) {
-        errorBuyerName.textContent = 'Nama lengkap wajib diisi.';
+    if (!name) {
+        errName.textContent = 'Nama lengkap wajib diisi.';
         buyerName.classList.add('invalid');
         isValid = false;
     } else {
+        buyerName.classList.remove('invalid');
         buyerName.classList.add('valid');
     }
 
-    if (!emailValue) {
-        errorBuyerEmail.textContent = 'Alamat email wajib diisi.';
+    if (!email) {
+        errEmail.textContent = 'Alamat email wajib diisi.';
         buyerEmail.classList.add('invalid');
         isValid = false;
-    } else if (!validateEmailFormat(emailValue)) {
-        errorBuyerEmail.textContent = 'Format alamat email tidak valid (contoh: user@domain.com).';
+    } else if (!validateEmail(email)) {
+        errEmail.textContent = 'Format email tidak valid.';
         buyerEmail.classList.add('invalid');
         isValid = false;
     } else {
+        buyerEmail.classList.remove('invalid');
         buyerEmail.classList.add('valid');
     }
 
-    if (!confirmValue) {
-        errorConfirmEmail.textContent = 'Konfirmasi email wajib diisi.';
+    if (!confirm) {
+        errConfirm.textContent = 'Konfirmasi email wajib diisi.';
         confirmEmail.classList.add('invalid');
         isValid = false;
-    } else if (confirmValue !== emailValue) {
-        errorConfirmEmail.textContent = 'Konfirmasi email tidak cocok dengan alamat email di atas.';
+    } else if (confirm !== email) {
+        errConfirm.textContent = 'Konfirmasi email tidak cocok.';
         confirmEmail.classList.add('invalid');
         isValid = false;
     } else {
+        confirmEmail.classList.remove('invalid');
         confirmEmail.classList.add('valid');
     }
 
     if (isValid) {
         formSuccess.hidden = false;
         orderForm.reset();
-        setTimeout(() => {
-            buyerName.classList.remove('valid');
-            buyerEmail.classList.remove('valid');
-            confirmEmail.classList.remove('valid');
-        }, 3000);
     }
+}
+
+function checkEmailMatch() {
+    if (!confirmEmail.value) return;
+    const match = confirmEmail.value === buyerEmail.value;
+    errConfirm.textContent = match ? '' : 'Konfirmasi email tidak cocok.';
+    confirmEmail.classList.toggle('invalid', !match);
+    confirmEmail.classList.toggle('valid', match);
 }
 
 function setupEventListeners() {
@@ -245,40 +261,23 @@ function setupEventListeners() {
     orderForm.addEventListener('submit', handleFormValidation);
 
     orderForm.addEventListener('reset', () => {
-        errorBuyerName.textContent = '';
-        errorBuyerEmail.textContent = '';
-        errorConfirmEmail.textContent = '';
+        errName.textContent = '';
+        errEmail.textContent = '';
+        errConfirm.textContent = '';
         formSuccess.hidden = true;
-        buyerName.classList.remove('invalid', 'valid');
-        buyerEmail.classList.remove('invalid', 'valid');
-        confirmEmail.classList.remove('invalid', 'valid');
+        [buyerName, buyerEmail, confirmEmail].forEach(input => input.classList.remove('invalid', 'valid'));
     });
 
-    buyerEmail.addEventListener('input', () => {
-        if (confirmEmail.value) {
-            if (buyerEmail.value !== confirmEmail.value) {
-                errorConfirmEmail.textContent = 'Konfirmasi email tidak cocok.';
-                confirmEmail.classList.add('invalid');
-                confirmEmail.classList.remove('valid');
-            } else {
-                errorConfirmEmail.textContent = '';
-                confirmEmail.classList.remove('invalid');
-                confirmEmail.classList.add('valid');
-            }
-        }
-    });
+    btnStatPrev.addEventListener('click', () => { displayStatSlide(currentStatIndex - 1); startStatTimer(); });
+    btnStatNext.addEventListener('click', () => { displayStatSlide(currentStatIndex + 1); startStatTimer(); });
 
-    confirmEmail.addEventListener('input', () => {
-        if (confirmEmail.value !== buyerEmail.value) {
-            errorConfirmEmail.textContent = 'Konfirmasi email tidak cocok dengan email utama.';
-            confirmEmail.classList.add('invalid');
-            confirmEmail.classList.remove('valid');
-        } else {
-            errorConfirmEmail.textContent = '';
-            confirmEmail.classList.remove('invalid');
-            confirmEmail.classList.add('valid');
-        }
-    });
+    if (statsSection) {
+        statsSection.addEventListener('mouseenter', stopStatTimer);
+        statsSection.addEventListener('mouseleave', startStatTimer);
+    }
+
+    buyerEmail.addEventListener('input', checkEmailMatch);
+    confirmEmail.addEventListener('input', checkEmailMatch);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
