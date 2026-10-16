@@ -45,19 +45,26 @@
         </section>
 
         <section class="nav-section stats-section">
-            <h3>Ringkasan Statistik Pasar</h3>
-            <p>Total Produk: <strong id="stat-total">0</strong></p>
-            <p>Rata-rata Harga: $<strong id="stat-avg-price">0.00</strong></p>
-            <p>Produk Termahal: <strong id="stat-max-price">-</strong></p>
-            <p>Jumlah Kategori: <strong id="stat-category-count">0</strong></p>
+            <header class="stats-header">
+                <h3>Statistik Pasar</h3>
+                <nav class="stats-controls" aria-label="Navigasi Statistik">
+                    <button type="button" id="btn-stat-prev" class="stat-arrow" aria-label="Sebelumnya">&lsaquo;</button>
+                    <button type="button" id="btn-stat-next" class="stat-arrow" aria-label="Berikutnya">&rsaquo;</button>
+                </nav>
+            </header>
+            <article id="stat-slide-card" class="stat-slide-card" aria-live="polite">
+                <span id="stat-slide-label" class="stat-slide-label">Memuat Statistik...</span>
+                <strong id="stat-slide-value" class="stat-slide-value">-</strong>
+                <span id="stat-slide-desc" class="stat-slide-desc">Analisis data pasar real-time</span>
+            </article>
+            <nav id="stat-dots" class="stat-dots" aria-label="Indikator Slide"></nav>
         </section>
 
         <section class="nav-section">
-            <h3>Menu Cepat</h3>
-            <ul>
-                <li><a href="#katalog-produk">Katalog Produk</a></li>
-                <li><a href="#form-pemesanan">Pemesanan &amp; Konsultasi</a></li>
-            </ul>
+            <h3>Kategori Pilihan</h3>
+            <nav id="category-pills" class="category-pills" aria-label="Filter Kategori Cepat">
+                <button type="button" class="pill-btn active" data-category="all">Semua</button>
+            </nav>
         </section>
     </nav>
 
